@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar Sesión - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-sign-in-alt fa-3x text-primary mb-3"></i>
+                    <h2 class="h4">Iniciar Sesión</h2>
+                    <p class="text-muted">Accede a tu cuenta del ERP</p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                            {{ form.username.label }}
+                        </label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.username.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                            {{ form.password.label }}
+                        </label>
+                        {{ form.password }}
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.password.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        {{ form.remember_me }}
+                        <label class="form-check-label" for="{{ form.remember_me.id_for_label }}">
+                            {{ form.remember_me.label }}
+                        </label>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt"></i> Ingresar
+                        </button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        ¿Olvidaste tu contraseña? <a href="#" class="text-decoration-none">Contacta al administrador</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'core:home' %}" class="btn btn-link">
+                <i class="fas fa-arrow-left"></i> Volver al inicio
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

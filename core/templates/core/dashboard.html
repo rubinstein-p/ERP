@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-tachometer-alt text-primary"></i> Dashboard
+            </h1>
+            <small class="text-muted">Bienvenido, {{ user.get_full_name|default:user.username }}</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Estadísticas rápidas -->
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h4 class="mb-1">0</h4>
+                <small class="text-muted">Usuarios Totales</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-2x text-success mb-2"></i>
+                <h4 class="mb-1">0</h4>
+                <small class="text-muted">Órdenes de Venta</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <i class="fas fa-boxes fa-2x text-warning mb-2"></i>
+                <h4 class="mb-1">0</h4>
+                <small class="text-muted">Productos en Stock</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                <h4 class="mb-1">0</h4>
+                <small class="text-muted">Reportes Hoy</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock text-muted"></i> Actividad Reciente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for item in recent_activity %}
+                        <div class="list-group-item px-0">
+                            <small class="text-muted">{{ item.timestamp|date:"d/m/Y H:i" }}</small>
+                            <div>{{ item.description }}</div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No hay actividad reciente</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt text-warning"></i> Accesos Rápidos
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'core:user_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-users"></i> Gestionar Usuarios
+                    </a>
+                    <a href="{% url 'core:parameter_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-cogs"></i> Parámetros del Sistema
+                    </a>
+                    <a href="#" class="btn btn-outline-success btn-sm disabled">
+                        <i class="fas fa-plus"></i> Nuevo Producto
+                    </a>
+                    <a href="#" class="btn btn-outline-info btn-sm disabled">
+                        <i class="fas fa-chart-bar"></i> Ver Reportes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
