@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
@@ -12,9 +12,10 @@ from core.forms import (
     UserCreationForm, UserChangeForm, UserProfileForm,
     PasswordChangeForm, LoginForm
 )
+from core.models import AuditLog
 from core.models import User
 from core.services import UserService
-from core.views.mixins import StaffRequiredMixin
+from core.views.mixins import PermissionAuditRequiredMixin, StaffRequiredMixin
 
 
 class HomeView(TemplateView):
@@ -41,7 +42,12 @@ class LoginView(FormView):
         username = form.cleaned_data['username']
         password = form.cleaned_data['password']
 
-        user = UserService.authenticate_user(username, password)
+        user, reason, remaining = UserService.authenticate_user(
+            username,
+            password,
+            request=self.request,
+            return_detail=True,
+        )
 
         if user:
             login(self.request, user)
@@ -50,7 +56,16 @@ class LoginView(FormView):
             messages.success(self.request, f"Bienvenido, {user.get_full_name() or user.username}")
             return super().form_valid(form)
         else:
-            messages.error(self.request, "Credenciales inválidas")
+            if reason == 'locked':
+                messages.error(
+                    self.request,
+                    'Cuenta temporalmente bloqueada por intentos fallidos. Intenta nuevamente más tarde.',
+                )
+            else:
+                if remaining is None:
+                    messages.error(self.request, 'Credenciales inválidas')
+                else:
+                    messages.error(self.request, f'Credenciales inválidas. Intentos restantes: {remaining}')
             return self.form_invalid(form)
 
     def get(self, request, *args, **kwargs):
@@ -65,6 +80,17 @@ class LogoutView(LoginRequiredMixin, FormView):
     """
 
     def get(self, request, *args, **kwargs):
+        return HttpResponseNotAllowed(['POST'])
+
+    def post(self, request, *args, **kwargs):
+        AuditLog.objects.create(
+            user=request.user,
+            action='LOGOUT',
+            model_name='User',
+            object_id=request.user.id,
+            object_repr=str(request.user),
+            changes={'action': 'user_logout'},
+        )
         logout(request)
         messages.info(request, "Sesión cerrada correctamente")
         return redirect('core:login')
@@ -85,7 +111,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+class UserListView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, ListView):
     """
     Vista para listar usuarios.
     """
@@ -93,6 +119,8 @@ class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     template_name = 'core/user_list.html'
     context_object_name = 'users'
     paginate_by = 25
+    permission_required = 'core.view_user'
+    raise_exception = True
 
     def get_queryset(self):
         queryset = User.objects.all().prefetch_related('groups', 'user_permissions')
@@ -122,19 +150,21 @@ class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         return context
 
 
-class UserDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+class UserDetailView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, DetailView):
     """
     Vista para ver detalles de un usuario.
     """
     model = User
     template_name = 'core/user_detail.html'
     context_object_name = 'user_profile'
+    permission_required = 'core.view_user'
+    raise_exception = True
 
     def get_queryset(self):
         return User.objects.all().prefetch_related('groups', 'user_permissions')
 
 
-class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, CreateView):
     """
     Vista para crear nuevos usuarios.
     """
@@ -142,6 +172,8 @@ class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     form_class = UserCreationForm
     template_name = 'core/user_form.html'
     success_url = reverse_lazy('core:user_list')
+    permission_required = 'core.add_user'
+    raise_exception = True
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -174,7 +206,7 @@ class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
             return self.form_invalid(form)
 
 
-class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, UpdateView):
     """
     Vista para editar usuarios.
     """
@@ -182,6 +214,8 @@ class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     form_class = UserChangeForm
     template_name = 'core/user_form.html'
     success_url = reverse_lazy('core:user_list')
+    permission_required = 'core.change_user'
+    raise_exception = True
 
     def get_queryset(self):
         return User.objects.all().prefetch_related('groups', 'user_permissions')
@@ -206,13 +240,15 @@ class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
 
-class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, DeleteView):
     """
     Vista para eliminar usuarios (desactivar).
     """
     model = User
     template_name = 'core/user_confirm_delete.html'
     success_url = reverse_lazy('core:user_list')
+    permission_required = 'core.delete_user'
+    raise_exception = True
 
     def get_queryset(self):
         return UserService.get_active_users()
@@ -260,5 +296,13 @@ class PasswordChangeView(LoginRequiredMixin, FormView):
     def form_valid(self, form):
         form.save()
         update_session_auth_hash(self.request, self.request.user)
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='PASSWORD_CHANGE',
+            model_name='User',
+            object_id=self.request.user.id,
+            object_repr=str(self.request.user),
+            changes={'action': 'password_changed'},
+        )
         messages.success(self.request, "Contraseña cambiada correctamente")
         return super().form_valid(form)

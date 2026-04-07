@@ -8,10 +8,10 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 
 from core.forms import RoleForm
 from core.services import RoleService
-from core.views.mixins import StaffRequiredMixin
+from core.views.mixins import PermissionAuditRequiredMixin, StaffRequiredMixin
 
 
-class RoleListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
+class RoleListView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, ListView):
     """
     Vista para listar roles del sistema.
     """
@@ -20,6 +20,8 @@ class RoleListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     template_name = 'core/role_list.html'
     context_object_name = 'roles'
     paginate_by = 10
+    permission_required = 'auth.view_group'
+    raise_exception = True
 
     def get_paginate_by(self, queryset):
         page_size = self.request.GET.get('page_size', '10')
@@ -67,7 +69,7 @@ class RoleListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
         return context
 
 
-class RoleDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
+class RoleDetailView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, DetailView):
     """
     Vista de detalle de rol.
     """
@@ -75,12 +77,14 @@ class RoleDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     model = Group
     template_name = 'core/role_detail.html'
     context_object_name = 'role'
+    permission_required = 'auth.view_group'
+    raise_exception = True
 
     def get_queryset(self):
         return RoleService.get_roles()
 
 
-class RoleCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
+class RoleCreateView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, CreateView):
     """
     Vista para crear roles.
     """
@@ -89,6 +93,8 @@ class RoleCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     form_class = RoleForm
     template_name = 'core/role_form.html'
     success_url = reverse_lazy('core:role_list')
+    permission_required = 'auth.add_group'
+    raise_exception = True
 
     def form_valid(self, form):
         try:
@@ -104,7 +110,7 @@ class RoleCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
             return self.form_invalid(form)
 
 
-class RoleUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
+class RoleUpdateView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, UpdateView):
     """
     Vista para editar roles.
     """
@@ -113,6 +119,8 @@ class RoleUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     form_class = RoleForm
     template_name = 'core/role_form.html'
     success_url = reverse_lazy('core:role_list')
+    permission_required = 'auth.change_group'
+    raise_exception = True
 
     def get_queryset(self):
         return RoleService.get_roles()
@@ -132,7 +140,7 @@ class RoleUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
 
-class RoleDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
+class RoleDeleteView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequiredMixin, DeleteView):
     """
     Vista para eliminar roles.
     """
@@ -140,6 +148,8 @@ class RoleDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     model = Group
     template_name = 'core/role_confirm_delete.html'
     success_url = reverse_lazy('core:role_list')
+    permission_required = 'auth.delete_group'
+    raise_exception = True
 
     def get_queryset(self):
         return RoleService.get_roles()

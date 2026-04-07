@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group, Permission
 from django.core.exceptions import ValidationError
+from django.db.models import Q
 
 from core.models import AuditLog
 
@@ -117,8 +118,10 @@ class RoleService:
     def _permissions_for_apps(app_labels, actions=None):
         queryset = Permission.objects.filter(content_type__app_label__in=app_labels)
         if actions:
-            prefixes = tuple(f'{action}_' for action in actions)
-            queryset = queryset.filter(codename__startswith=prefixes)
+            query = Q()
+            for action in actions:
+                query |= Q(codename__startswith=f'{action}_')
+            queryset = queryset.filter(query)
         return queryset.distinct()
 
     @staticmethod
@@ -152,12 +155,22 @@ class RoleService:
         Matriz estandar de roles base del ERP.
         """
         business_modules = ['masters', 'purchases', 'sales', 'inventory', 'accounting', 'reports']
+        core_read = RoleService.permissions_for_modules(['core'], access_level='read')
+        business_operate = RoleService.permissions_for_modules(business_modules, access_level='operate')
+        business_manage = RoleService.permissions_for_modules(business_modules, access_level='manage')
+
+        operator_ids = set(core_read.values_list('id', flat=True)).union(
+            set(business_operate.values_list('id', flat=True))
+        )
+        supervisor_ids = set(core_read.values_list('id', flat=True)).union(
+            set(business_manage.values_list('id', flat=True))
+        )
 
         return {
             'Administrador': Permission.objects.all(),
-            'Operador': RoleService.permissions_for_modules(business_modules, access_level='operate'),
+            'Operador': Permission.objects.filter(id__in=operator_ids),
             'Auditor': RoleService.permissions_for_modules(['core'] + business_modules, access_level='read'),
-            'Supervisor': RoleService.permissions_for_modules(business_modules, access_level='manage'),
+            'Supervisor': Permission.objects.filter(id__in=supervisor_ids),
         }
 
     @staticmethod

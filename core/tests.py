@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.test import override_settings
 from django.utils import timezone
 
 from core.models import User, AuditLog, SystemParameter
@@ -378,6 +379,11 @@ class UserPermissionsManagementTest(TestCase):
             password='StaffPass123',
             is_staff=True,
         )
+        self.staff_user.user_permissions.set(
+            Permission.objects.filter(
+                codename__in=['view_user', 'add_user', 'change_user', 'delete_user']
+            )
+        )
         self.regular_user = User.objects.create_user(
             username='regular',
             email='regular@example.com',
@@ -438,7 +444,7 @@ class RoleManagementTest(TestCase):
     """
 
     def setUp(self):
-        from django.contrib.auth.models import Group
+        from django.contrib.auth.models import Group, Permission
 
         self.Group = Group
         self.staff_user = User.objects.create_user(
@@ -446,6 +452,11 @@ class RoleManagementTest(TestCase):
             email='staff_roles@example.com',
             password='StaffPass123',
             is_staff=True,
+        )
+        self.staff_user.user_permissions.set(
+            Permission.objects.filter(
+                codename__in=['view_group', 'add_group', 'change_group', 'delete_group']
+            )
         )
         self.regular_user = User.objects.create_user(
             username='regular_roles',
@@ -587,3 +598,87 @@ class RoleManagementTest(TestCase):
         self.assertIn('Supervisor', names)
         self.assertIn('Operador Compras', names)
         self.assertIn('Operador Ventas', names)
+
+
+class LogoutSecurityTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='logout_user',
+            email='logout@example.com',
+            password='LogoutPass123',
+        )
+
+    def test_logout_get_not_allowed(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('core:logout'))
+        self.assertEqual(response.status_code, 405)
+
+    def test_logout_post_ok(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('core:logout'), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+
+@override_settings(LOGIN_MAX_ATTEMPTS=2, LOGIN_LOCKOUT_SECONDS=60)
+class LoginRateLimitTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='ratelimit_user',
+            email='ratelimit@example.com',
+            password='StrongPass123',
+        )
+
+    def test_failed_login_creates_audit_log(self):
+        from django.urls import reverse
+
+        response = self.client.post(
+            reverse('core:login'),
+            {'username': self.user.username, 'password': 'wrong', 'remember_me': False},
+            follow=True,
+        )
+
+        self.assertIn('X-Request-ID', response.headers)
+        log = AuditLog.objects.filter(action='LOGIN_FAILED').latest('id')
+        self.assertIn('request_id', log.changes)
+        self.assertEqual(log.changes['request_id'], response.headers['X-Request-ID'])
+
+    def test_login_is_blocked_after_max_attempts(self):
+        from django.urls import reverse
+
+        self.client.post(reverse('core:login'), {'username': self.user.username, 'password': 'wrong'})
+        self.client.post(reverse('core:login'), {'username': self.user.username, 'password': 'wrong'})
+        response = self.client.post(
+            reverse('core:login'),
+            {'username': self.user.username, 'password': 'wrong'},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(action='LOGIN_FAILED', changes__reason='rate_limited').exists()
+        )
+
+
+class AccessDeniedAuditTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='noaccess_user',
+            email='noaccess@example.com',
+            password='NoAccess123',
+        )
+
+    def test_access_denied_is_audited(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('core:user_list'))
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('X-Request-ID', response.headers)
+        log = AuditLog.objects.filter(action='ACCESS_DENIED', object_repr='/users/').latest('id')
+        self.assertIn('request_id', log.changes)
+        self.assertEqual(log.changes['request_id'], response.headers['X-Request-ID'])

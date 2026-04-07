@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.conf import settings
 
 from core.models import User, AuditLog
 
@@ -69,7 +71,47 @@ class UserService:
         return user
 
     @staticmethod
-    def authenticate_user(identifier, password):
+    def _get_client_ip(request):
+        if not request:
+            return None
+        forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if forwarded_for:
+            return forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR')
+
+    @staticmethod
+    def _rate_limit_keys(identifier, ip_address):
+        normalized = (identifier or '').strip().lower()
+        keys = [f'login_attempts:id:{normalized}']
+        if ip_address:
+            keys.append(f'login_attempts:ip:{ip_address}')
+        return keys
+
+    @staticmethod
+    def _log_login_failed(identifier, request=None, reason='invalid_credentials', remaining=None):
+        user_lookup = User.objects.filter(username__iexact=identifier).first()
+        if not user_lookup and '@' in (identifier or ''):
+            user_lookup = User.objects.filter(email__iexact=identifier).first()
+
+        ip_address = UserService._get_client_ip(request)
+        user_agent = request.META.get('HTTP_USER_AGENT', '') if request else ''
+
+        AuditLog.objects.create(
+            user=user_lookup,
+            action='LOGIN_FAILED',
+            model_name='UserAuth',
+            object_id=user_lookup.id if user_lookup else 0,
+            object_repr=identifier or 'unknown_identifier',
+            changes={
+                'reason': reason,
+                'remaining_attempts': remaining,
+            },
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+
+    @staticmethod
+    def authenticate_user(identifier, password, request=None, return_detail=False):
         """
         Autentica un usuario por nombre de usuario o email.
 
@@ -80,6 +122,23 @@ class UserService:
         Returns:
             User or None: Usuario autenticado o None
         """
+        max_attempts = getattr(settings, 'LOGIN_MAX_ATTEMPTS', 5)
+        lockout_seconds = getattr(settings, 'LOGIN_LOCKOUT_SECONDS', 900)
+        ip_address = UserService._get_client_ip(request)
+        rate_keys = UserService._rate_limit_keys(identifier, ip_address)
+        current_attempts = max(cache.get(key, 0) for key in rate_keys)
+
+        if current_attempts >= max_attempts:
+            UserService._log_login_failed(
+                identifier,
+                request=request,
+                reason='rate_limited',
+                remaining=0,
+            )
+            if return_detail:
+                return None, 'locked', 0
+            return None
+
         user = authenticate(username=identifier, password=password)
 
         if not user and '@' in identifier:
@@ -88,16 +147,37 @@ class UserService:
                 user = authenticate(username=user_lookup.username, password=password)
 
         if user and user.is_active:
+            for key in rate_keys:
+                cache.delete(key)
+
             AuditLog.objects.create(
                 user=user,
                 action='LOGIN',
                 model_name='User',
                 object_id=user.id,
                 object_repr=str(user),
-                changes={'action': 'user_login'}
+                changes={'action': 'user_login'},
+                ip_address=ip_address,
+                user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
             )
+            if return_detail:
+                return user, None, None
             return user
 
+        new_attempts = current_attempts + 1
+        for key in rate_keys:
+            cache.set(key, new_attempts, timeout=lockout_seconds)
+
+        remaining = max(max_attempts - new_attempts, 0)
+        UserService._log_login_failed(
+            identifier,
+            request=request,
+            reason='invalid_credentials',
+            remaining=remaining,
+        )
+
+        if return_detail:
+            return None, 'invalid', remaining
         return None
 
     @staticmethod

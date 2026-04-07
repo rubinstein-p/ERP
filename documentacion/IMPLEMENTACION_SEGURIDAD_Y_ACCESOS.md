@@ -191,3 +191,151 @@ Siguientes pasos recomendados:
 2. Incorporar politica de bloqueo por intentos fallidos de login.
 3. Completar auditoria de eventos de seguridad (logout, cambios de password, alta/baja de roles).
 4. Agregar tests de integracion de flujo completo usuario + rol + acceso a vistas por permiso.
+
+## 11) Actualizacion de documentacion (novedades no registradas previamente)
+Se incorporaron funcionalidades que no estaban reflejadas en las secciones anteriores:
+
+1. Matriz de permisos por modulo con asignacion rapida en ABM de roles:
+  - Seleccion de modulos (`permission_modules`)
+  - Nivel de acceso (`permission_level`: read/operate/manage)
+  - Merge automatico con permisos manuales
+  Archivos: `core/forms/role_form.py`, `core/services/role_service.py`, `core/templates/core/role_form.html`.
+
+2. Semillas estandar de roles con comando de gestion:
+  - Roles estandar: `Administrador`, `Operador`, `Auditor`, `Supervisor`
+  - Modo extendido por dominio con `--extended`
+  Archivo: `core/management/commands/create_default_roles.py`.
+
+3. Matriz de roles estandar y extendida en servicio:
+  - `get_standard_role_matrix()`
+  - `get_extended_role_matrix()`
+  - `create_standard_roles()`
+  - `create_default_roles(include_extended=...)`
+  Archivo: `core/services/role_service.py`.
+
+4. Cobertura de pruebas ampliada:
+  - pruebas de semillas estandar y modo extendido
+  - pruebas de buscador/paginacion de roles
+  Archivo: `core/tests.py`.
+
+## 12) Revision de faltantes y brechas detectadas
+Estado de revision del modulo seguridad/permisos/usuarios:
+
+### Critico
+1. La matriz de permisos por accion usa `codename__startswith` con una tupla de prefijos.
+  En Django, ese lookup espera string y puede devolver permisos vacios para niveles `read/operate/manage`.
+  Impacto: roles estandar (Operador/Auditor/Supervisor) pueden quedar sin permisos efectivos.
+  Archivo: `core/services/role_service.py`.
+
+### Alto
+2. Logout por GET en vez de POST.
+  Impacto: logout involuntario por enlaces externos/precarga (CSRF de cierre de sesion).
+  Archivo: `core/views/user_views.py`.
+
+3. Control de acceso basado en `is_staff` para ABM, pero sin `PermissionRequiredMixin` por accion.
+  Impacto: falta granularidad por permiso para create/update/delete.
+  Archivos: `core/views/user_views.py`, `core/views/role_views.py`.
+
+### Medio
+4. Falta politica de bloqueo por intentos fallidos de login y/o rate limiting.
+  Impacto: expone a fuerza bruta.
+  Archivo relacionado: `core/services/user_service.py`.
+
+5. Falta flujo de recuperacion de contrasena (password reset) para operacion productiva.
+  Impacto: dependencia de administracion manual.
+
+6. Falta auditoria explicita de eventos de seguridad clave:
+  - logout
+  - cambio de contrasena
+  - denegaciones de acceso
+
+### Bajo
+7. Mensajes de error capturan `Exception` generica en varias vistas.
+  Impacto: menor trazabilidad y manejo menos fino de errores de negocio.
+  Archivos: `core/views/user_views.py`, `core/views/role_views.py`.
+
+## 13) Acciones recomendadas (orden sugerido)
+1. Corregir filtro de prefijos de permisos en matriz por modulo.
+2. Migrar logout a POST con confirmacion o boton protegido con CSRF.
+3. Incorporar permisos por accion en vistas (listar/crear/editar/eliminar).
+4. Implementar rate limiting o bloqueo por intentos.
+5. Completar auditoria de eventos faltantes.
+6. Agregar password reset y pruebas de integracion de seguridad.
+
+## 14) Hardening aplicado despues de la revision
+Se implementaron los puntos prioritarios y endurecimiento adicional:
+
+1. Rate limiting en login:
+  - configuracion por settings:
+    - `LOGIN_MAX_ATTEMPTS` (default 5)
+    - `LOGIN_LOCKOUT_SECONDS` (default 900)
+  - bloqueo temporal al superar intentos
+  - mensajes de intentos restantes y estado bloqueado
+  Archivos: `erp/settings.py`, `core/services/user_service.py`, `core/views/user_views.py`.
+
+2. Auditoria explicita de intentos fallidos de login:
+  - nueva accion: `LOGIN_FAILED`
+  - registro de razon (`invalid_credentials` / `rate_limited`), IP y user agent
+  Archivos: `core/models/audit.py`, `core/services/user_service.py`.
+
+3. Auditoria explicita de accesos denegados:
+  - nueva accion: `ACCESS_DENIED`
+  - mixin `PermissionAuditRequiredMixin` para registrar faltas de permiso
+  - `StaffRequiredMixin` tambien audita denegaciones
+  Archivos: `core/views/mixins.py`, `core/views/user_views.py`, `core/views/role_views.py`.
+
+4. Logout endurecido:
+  - logout solo por POST
+  - GET retorna 405
+  - navbar actualizada con formulario POST + CSRF
+  - auditoria de `LOGOUT`
+  Archivos: `core/views/user_views.py`, `templates/components/navbar.html`.
+
+5. Auditoria de cambio de contrasena:
+  - nueva accion: `PASSWORD_CHANGE`
+  - registro al completar PasswordChangeView
+  Archivo: `core/views/user_views.py`.
+
+6. Permisos granulares por accion en ABM:
+  - Usuarios: `core.view_user`, `core.add_user`, `core.change_user`, `core.delete_user`
+  - Roles: `auth.view_group`, `auth.add_group`, `auth.change_group`, `auth.delete_group`
+  Archivos: `core/views/user_views.py`, `core/views/role_views.py`.
+
+7. Correccion de matriz de permisos por modulo:
+  - reemplazo de filtro incorrecto por `Q()` combinado por prefijos
+  - ajuste de roles estandar para incluir base de Core y evitar perfiles vacios
+  Archivo: `core/services/role_service.py`.
+
+## 15) Pruebas agregadas para hardening
+Se incorporaron y validaron pruebas para:
+- bloqueo por intentos fallidos (`LoginRateLimitTest`)
+- auditoria de login fallido (`LOGIN_FAILED`)
+- auditoria de acceso denegado (`ACCESS_DENIED`)
+- seguridad de logout por POST (`LogoutSecurityTest`)
+
+Archivo: `core/tests.py`.
+
+## 16) Middleware de correlacion por request
+Se agrego middleware de trazabilidad para correlacionar eventos de auditoria por request:
+
+1. `RequestIdMiddleware`:
+  - genera un `request_id` UUID por request
+  - expone header de respuesta `X-Request-ID`
+  - inyecta `request.request_id` para consumo interno
+
+2. Contexto por request:
+  - `core/request_context.py` usa `ContextVar` para almacenar el `request_id` activo
+
+3. Integracion automatica en auditoria:
+  - `AuditLog.save()` agrega `request_id` en `changes` cuando existe contexto activo
+  - evita modificar manualmente cada punto de logging
+
+Archivos:
+- `core/middleware.py`
+- `core/request_context.py`
+- `core/models/audit.py`
+- `erp/settings.py`
+
+Pruebas de correlacion:
+- validacion de header `X-Request-ID`
+- validacion de `changes.request_id` en `LOGIN_FAILED` y `ACCESS_DENIED`

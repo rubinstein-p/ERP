@@ -1,6 +1,7 @@
 from django.db import models
 
 from core.models.base import BaseModel
+from core.request_context import get_current_request_id
 from core.models.user import User
 
 
@@ -13,7 +14,10 @@ class AuditLog(BaseModel):
         ('UPDATE', 'Actualizar'),
         ('DELETE', 'Eliminar'),
         ('LOGIN', 'Inicio de sesión'),
+        ('LOGIN_FAILED', 'Intento de login fallido'),
         ('LOGOUT', 'Cierre de sesión'),
+        ('ACCESS_DENIED', 'Acceso denegado'),
+        ('PASSWORD_CHANGE', 'Cambio de contraseña'),
         ('VIEW', 'Visualización'),
     ]
 
@@ -67,6 +71,20 @@ class AuditLog(BaseModel):
             models.Index(fields=['model_name', 'object_id']),
             models.Index(fields=['action', 'timestamp']),
         ]
+
+    def save(self, *args, **kwargs):
+        request_id = get_current_request_id()
+        if request_id:
+            if self.changes is None:
+                self.changes = {'request_id': request_id}
+            elif isinstance(self.changes, dict):
+                self.changes.setdefault('request_id', request_id)
+            else:
+                self.changes = {
+                    'detail': self.changes,
+                    'request_id': request_id,
+                }
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.user} - {self.action} - {self.model_name} {self.object_id}"
