@@ -430,3 +430,160 @@ class UserPermissionsManagementTest(TestCase):
         self.assertTrue(self.regular_user.groups.filter(name='Auditores').exists())
         if permission:
             self.assertTrue(self.regular_user.user_permissions.filter(id=permission.id).exists())
+
+
+class RoleManagementTest(TestCase):
+    """
+    Tests para ABM de roles.
+    """
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+
+        self.Group = Group
+        self.staff_user = User.objects.create_user(
+            username='staff_roles',
+            email='staff_roles@example.com',
+            password='StaffPass123',
+            is_staff=True,
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular_roles',
+            email='regular_roles@example.com',
+            password='RegularPass123',
+        )
+
+    def test_regular_user_cannot_access_roles(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.regular_user)
+        response = self.client.get(reverse('core:role_list'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_user_can_create_role(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse('core:role_create'),
+            {'name': 'Compras', 'permissions': []},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(self.Group.objects.filter(name='Compras').exists())
+
+    def test_staff_user_can_update_role(self):
+        from django.urls import reverse
+
+        role = self.Group.objects.create(name='Ventas')
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse('core:role_update', kwargs={'pk': role.pk}),
+            {'name': 'Ventas Senior', 'permissions': []},
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        role.refresh_from_db()
+        self.assertEqual(role.name, 'Ventas Senior')
+
+    def test_staff_user_can_delete_role(self):
+        from django.urls import reverse
+
+        role = self.Group.objects.create(name='Temporal')
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse('core:role_delete', kwargs={'pk': role.pk}),
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.Group.objects.filter(pk=role.pk).exists())
+
+    def test_filter_roles_by_permission(self):
+        from django.contrib.auth.models import Permission
+        from django.urls import reverse
+
+        perm = Permission.objects.filter(codename__icontains='view').first()
+        role_with_perm = self.Group.objects.create(name='ConPermiso')
+        role_without_perm = self.Group.objects.create(name='SinPermiso')
+        if perm:
+            role_with_perm.permissions.add(perm)
+
+        self.client.force_login(self.staff_user)
+        query = perm.codename if perm else 'view'
+        response = self.client.get(reverse('core:role_list'), {'permission_search': query})
+
+        self.assertEqual(response.status_code, 200)
+        roles = list(response.context['roles'])
+        if perm:
+            self.assertIn(role_with_perm, roles)
+            self.assertNotIn(role_without_perm, roles)
+
+    def test_role_list_page_size(self):
+        from django.urls import reverse
+
+        for i in range(30):
+            self.Group.objects.create(name=f'Rol-{i:02d}')
+
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('core:role_list'), {'page_size': '25'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['paginator'].per_page, 25)
+        self.assertTrue(response.context['is_paginated'])
+
+    def test_create_role_with_module_matrix_read_level(self):
+        from core.services import RoleService
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+        response = self.client.post(
+            reverse('core:role_create'),
+            {
+                'name': 'Lectores Core',
+                'permissions': [],
+                'permission_modules': ['core'],
+                'permission_level': 'read',
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        role = self.Group.objects.get(name='Lectores Core')
+
+        expected_ids = set(
+            RoleService.permissions_for_modules(['core'], access_level='read').values_list('id', flat=True)
+        )
+        current_ids = set(role.permissions.values_list('id', flat=True))
+        self.assertTrue(expected_ids.issubset(current_ids))
+
+    def test_permission_matrix_overview_contains_modules(self):
+        from core.services import RoleService
+
+        matrix = RoleService.get_permission_matrix_overview()
+        self.assertIn('core', matrix)
+        self.assertIn('masters', matrix)
+        self.assertIn('levels', matrix['core'])
+        self.assertIn('read', matrix['core']['levels'])
+
+    def test_create_standard_roles_contains_required_names(self):
+        from core.services import RoleService
+
+        RoleService.create_standard_roles()
+        names = set(self.Group.objects.values_list('name', flat=True))
+
+        self.assertIn('Administrador', names)
+        self.assertIn('Operador', names)
+        self.assertIn('Auditor', names)
+        self.assertIn('Supervisor', names)
+
+    def test_management_command_extended_mode_creates_domain_roles(self):
+        from django.core.management import call_command
+
+        call_command('create_default_roles', '--extended')
+        names = set(self.Group.objects.values_list('name', flat=True))
+
+        self.assertIn('Administrador', names)
+        self.assertIn('Operador', names)
+        self.assertIn('Auditor', names)
+        self.assertIn('Supervisor', names)
+        self.assertIn('Operador Compras', names)
+        self.assertIn('Operador Ventas', names)

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Rol{% else %}Nuevo Rol{% endif %} - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0"><i class="fas fa-user-tag text-primary"></i> {% if object %}Editar Rol{% else %}Alta de Rol{% endif %}</h1>
+        <a href="{% url 'core:role_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-key text-warning"></i> Datos del rol</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                    <label for="{{ form.permission_modules.id_for_label }}" class="form-label">{{ form.permission_modules.label }}</label>
+                    {{ form.permission_modules }}
+                    <small class="text-muted d-block">{{ form.permission_modules.help_text }}</small>
+                    {% for error in form.permission_modules.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.permission_level.id_for_label }}" class="form-label">{{ form.permission_level.label }}</label>
+                    {{ form.permission_level }}
+                    <small class="text-muted d-block">{{ form.permission_level.help_text }}</small>
+                    {% for error in form.permission_level.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.permissions.id_for_label }}" class="form-label">{{ form.permissions.label }}</label>
+                {{ form.permissions }}
+                <small class="text-muted">Selecciona permisos manuales o usa la matriz rapida por modulo para acelerar asignacion.</small>
+                {% for error in form.permissions.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            </div>
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-end gap-2">
+            <a href="{% url 'core:role_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Guardar</button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('input[type="text"]').forEach(function(el) {
+        el.classList.add('form-control');
+    });
+    document.querySelectorAll('select').forEach(function(el) {
+        el.classList.add('form-select');
+        if (el.multiple) {
+            if (el.id.includes('permission_modules')) {
+                el.setAttribute('size', '7');
+            } else {
+                el.setAttribute('size', '14');
+            }
+        }
+    });
+</script>
+{% endblock %}

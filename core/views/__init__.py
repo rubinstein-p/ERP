@@ -8,6 +8,9 @@ from .parameter_views import (
     SystemParameterCreateView, SystemParameterUpdateView, SystemParameterDeleteView,
     InitializeParametersView
 )
+from .role_views import (
+    RoleListView, RoleDetailView, RoleCreateView, RoleUpdateView, RoleDeleteView
+)
 
 __all__ = [
     'HomeView', 'LoginView', 'LogoutView', 'DashboardView',
@@ -16,4 +19,5 @@ __all__ = [
     'SystemParameterListView', 'SystemParameterDetailView',
     'SystemParameterCreateView', 'SystemParameterUpdateView', 'SystemParameterDeleteView',
     'InitializeParametersView',
+    'RoleListView', 'RoleDetailView', 'RoleCreateView', 'RoleUpdateView', 'RoleDeleteView',
 ]

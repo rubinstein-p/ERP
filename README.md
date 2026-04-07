@@ -95,6 +95,10 @@ erp/
 
 ## Desarrollo
 
+## Documentacion Tecnica
+
+- Implementacion de seguridad y accesos: `documentacion/IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md`
+
 ### Convenciones
 - Usar arquitectura modular por dominios
 - Toda lógica de negocio en servicios

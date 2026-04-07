@@ -4,6 +4,7 @@ from core.views import (
     HomeView, LoginView, LogoutView, DashboardView,
     UserListView, UserDetailView, UserCreateView, UserUpdateView, UserDeleteView,
     ProfileView, PasswordChangeView,
+    RoleListView, RoleDetailView, RoleCreateView, RoleUpdateView, RoleDeleteView,
     SystemParameterListView, SystemParameterDetailView,
     SystemParameterCreateView, SystemParameterUpdateView, SystemParameterDeleteView,
     InitializeParametersView
@@ -28,6 +29,13 @@ urlpatterns = [
     path('users/<int:pk>/', UserDetailView.as_view(), name='user_detail'),
     path('users/<int:pk>/edit/', UserUpdateView.as_view(), name='user_update'),
     path('users/<int:pk>/delete/', UserDeleteView.as_view(), name='user_delete'),
+
+    # Roles y permisos
+    path('roles/', RoleListView.as_view(), name='role_list'),
+    path('roles/create/', RoleCreateView.as_view(), name='role_create'),
+    path('roles/<int:pk>/', RoleDetailView.as_view(), name='role_detail'),
+    path('roles/<int:pk>/edit/', RoleUpdateView.as_view(), name='role_update'),
+    path('roles/<int:pk>/delete/', RoleDeleteView.as_view(), name='role_delete'),
 
     # Perfil de usuario
     path('profile/', ProfileView.as_view(), name='profile'),
