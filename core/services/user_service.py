@@ -1,6 +1,5 @@
 from django.contrib.auth import authenticate
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 
 from core.models import User, AuditLog
 
@@ -34,6 +33,10 @@ class UserService:
         if User.objects.filter(email=email).exists():
             raise ValidationError("El email ya está registrado")
 
+        created_by = extra_fields.pop('created_by', None)
+        groups = extra_fields.pop('groups', None)
+        user_permissions = extra_fields.pop('user_permissions', None)
+
         user = User.objects.create_user(
             username=username,
             email=email,
@@ -41,14 +44,26 @@ class UserService:
             **extra_fields
         )
 
+        if groups is not None:
+            user.groups.set(groups)
+
+        if user_permissions is not None:
+            user.user_permissions.set(user_permissions)
+
         # Registrar en auditoría
         AuditLog.objects.create(
-            user=user,
+            user=created_by or user,
             action='CREATE',
             model_name='User',
             object_id=user.id,
             object_repr=str(user),
-            changes={'action': 'user_created'}
+            changes={
+                'action': 'user_created',
+                'groups': list(user.groups.values_list('name', flat=True)),
+                'permissions_count': user.user_permissions.count(),
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            }
         )
 
         return user
@@ -97,6 +112,10 @@ class UserService:
         Returns:
             User: Usuario actualizado
         """
+        updated_by = update_data.pop('updated_by', None)
+        groups = update_data.pop('groups', None)
+        user_permissions = update_data.pop('user_permissions', None)
+
         old_data = {
             'username': user.username,
             'email': user.email,
@@ -104,13 +123,24 @@ class UserService:
             'last_name': user.last_name,
             'phone': user.phone,
             'department': user.department,
+            'is_active': user.is_active,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
         }
+        old_groups = sorted(user.groups.values_list('name', flat=True))
+        old_permissions = sorted(user.user_permissions.values_list('codename', flat=True))
 
         for field, value in update_data.items():
             if hasattr(user, field):
                 setattr(user, field, value)
 
         user.save()
+
+        if groups is not None:
+            user.groups.set(groups)
+
+        if user_permissions is not None:
+            user.user_permissions.set(user_permissions)
 
         # Registrar cambios en auditoría
         changes = {}
@@ -119,9 +149,20 @@ class UserService:
             if old_data[field] != new_value:
                 changes[field] = {'old': old_data[field], 'new': new_value}
 
+        new_groups = sorted(user.groups.values_list('name', flat=True))
+        if old_groups != new_groups:
+            changes['groups'] = {'old': old_groups, 'new': new_groups}
+
+        new_permissions = sorted(user.user_permissions.values_list('codename', flat=True))
+        if old_permissions != new_permissions:
+            changes['user_permissions'] = {
+                'old': old_permissions,
+                'new': new_permissions,
+            }
+
         if changes:
             AuditLog.objects.create(
-                user=user,
+                user=updated_by or user,
                 action='UPDATE',
                 model_name='User',
                 object_id=user.id,
@@ -161,7 +202,7 @@ class UserService:
         Returns:
             QuerySet: Usuarios activos
         """
-        return User.objects.filter(is_active=True)
+        return User.objects.filter(is_active=True).prefetch_related('groups', 'user_permissions')
 
     @staticmethod
     def get_user_by_id(user_id):

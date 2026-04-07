@@ -7,9 +7,10 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from core.forms import SystemParameterForm, ParameterSearchForm
 from core.models import SystemParameter
 from core.services import ParameterService
+from core.views.mixins import StaffRequiredMixin
 
 
-class SystemParameterListView(LoginRequiredMixin, ListView):
+class SystemParameterListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     """
     Vista para listar parámetros del sistema.
     """
@@ -54,7 +55,7 @@ class SystemParameterListView(LoginRequiredMixin, ListView):
         return context
 
 
-class SystemParameterDetailView(LoginRequiredMixin, DetailView):
+class SystemParameterDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     """
     Vista para ver detalles de un parámetro.
     """
@@ -66,7 +67,7 @@ class SystemParameterDetailView(LoginRequiredMixin, DetailView):
         return SystemParameter.objects.filter(is_active=True)
 
 
-class SystemParameterCreateView(LoginRequiredMixin, CreateView):
+class SystemParameterCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     """
     Vista para crear nuevos parámetros.
     """
@@ -94,7 +95,7 @@ class SystemParameterCreateView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
 
-class SystemParameterUpdateView(LoginRequiredMixin, UpdateView):
+class SystemParameterUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     """
     Vista para editar parámetros.
     """
@@ -125,7 +126,7 @@ class SystemParameterUpdateView(LoginRequiredMixin, UpdateView):
             return self.form_invalid(form)
 
 
-class SystemParameterDeleteView(LoginRequiredMixin, DeleteView):
+class SystemParameterDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     """
     Vista para eliminar parámetros (desactivar).
     """
@@ -146,7 +147,7 @@ class SystemParameterDeleteView(LoginRequiredMixin, DeleteView):
         return redirect(self.success_url)
 
 
-class InitializeParametersView(LoginRequiredMixin, CreateView):
+class InitializeParametersView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     """
     Vista para inicializar parámetros por defecto.
     """

@@ -360,3 +360,73 @@ class ParameterServiceTest(TestCase):
 
         tax_rate = ParameterService.get_parameter('TAX_RATE')
         self.assertEqual(tax_rate, 21.0)
+
+
+class UserPermissionsManagementTest(TestCase):
+    """
+    Tests para gestión de usuarios y permisos.
+    """
+
+    def setUp(self):
+        from django.contrib.auth.models import Group, Permission
+
+        self.Group = Group
+        self.Permission = Permission
+        self.staff_user = User.objects.create_user(
+            username='staff',
+            email='staff@example.com',
+            password='StaffPass123',
+            is_staff=True,
+        )
+        self.regular_user = User.objects.create_user(
+            username='regular',
+            email='regular@example.com',
+            password='RegularPass123',
+        )
+
+    def test_regular_user_cannot_access_user_management(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.regular_user)
+        response = self.client.get(reverse('core:user_list'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_staff_user_can_access_user_management(self):
+        from django.urls import reverse
+
+        self.client.force_login(self.staff_user)
+        response = self.client.get(reverse('core:user_list'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_create_user_with_group_and_permissions(self):
+        group = self.Group.objects.create(name='Operadores')
+        permission = self.Permission.objects.filter(content_type__app_label='core').first()
+
+        user = UserService.create_user(
+            username='nuevo',
+            email='nuevo@example.com',
+            password='PassSegura123',
+            is_staff=True,
+            groups=[group],
+            user_permissions=[permission] if permission else [],
+            created_by=self.staff_user,
+        )
+
+        self.assertTrue(user.groups.filter(name='Operadores').exists())
+        if permission:
+            self.assertTrue(user.user_permissions.filter(id=permission.id).exists())
+
+    def test_update_user_permissions(self):
+        group = self.Group.objects.create(name='Auditores')
+        permission = self.Permission.objects.filter(content_type__app_label='core').first()
+
+        UserService.update_user(
+            self.regular_user,
+            groups=[group],
+            user_permissions=[permission] if permission else [],
+            updated_by=self.staff_user,
+        )
+
+        self.assertTrue(self.regular_user.groups.filter(name='Auditores').exists())
+        if permission:
+            self.assertTrue(self.regular_user.user_permissions.filter(id=permission.id).exists())

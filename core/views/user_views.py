@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
@@ -12,6 +14,7 @@ from core.forms import (
 )
 from core.models import User
 from core.services import UserService
+from core.views.mixins import StaffRequiredMixin
 
 
 class HomeView(TemplateView):
@@ -42,6 +45,8 @@ class LoginView(FormView):
 
         if user:
             login(self.request, user)
+            if not form.cleaned_data.get('remember_me'):
+                self.request.session.set_expiry(0)
             messages.success(self.request, f"Bienvenido, {user.get_full_name() or user.username}")
             return super().form_valid(form)
         else:
@@ -80,7 +85,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class UserListView(LoginRequiredMixin, ListView):
+class UserListView(LoginRequiredMixin, StaffRequiredMixin, ListView):
     """
     Vista para listar usuarios.
     """
@@ -90,22 +95,34 @@ class UserListView(LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = UserService.get_active_users()
+        queryset = User.objects.all().prefetch_related('groups', 'user_permissions')
         search = self.request.GET.get('search')
+        status = self.request.GET.get('status', 'active')
+
+        if status == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status == 'inactive':
+            queryset = queryset.filter(is_active=False)
+
         if search:
             queryset = queryset.filter(
-                username__icontains=search
-            ) | queryset.filter(
-                email__icontains=search
-            ) | queryset.filter(
-                first_name__icontains=search
-            ) | queryset.filter(
-                last_name__icontains=search
+                Q(username__icontains=search)
+                | Q(email__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(employee_id__icontains=search)
             )
-        return queryset
+
+        return queryset.order_by('username')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search'] = self.request.GET.get('search', '')
+        context['status'] = self.request.GET.get('status', 'active')
+        return context
 
 
-class UserDetailView(LoginRequiredMixin, DetailView):
+class UserDetailView(LoginRequiredMixin, StaffRequiredMixin, DetailView):
     """
     Vista para ver detalles de un usuario.
     """
@@ -114,10 +131,10 @@ class UserDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'user_profile'
 
     def get_queryset(self):
-        return UserService.get_active_users()
+        return User.objects.all().prefetch_related('groups', 'user_permissions')
 
 
-class UserCreateView(LoginRequiredMixin, CreateView):
+class UserCreateView(LoginRequiredMixin, StaffRequiredMixin, CreateView):
     """
     Vista para crear nuevos usuarios.
     """
@@ -125,6 +142,11 @@ class UserCreateView(LoginRequiredMixin, CreateView):
     form_class = UserCreationForm
     template_name = 'core/user_form.html'
     success_url = reverse_lazy('core:user_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request_user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         try:
@@ -137,15 +159,22 @@ class UserCreateView(LoginRequiredMixin, CreateView):
                 phone=form.cleaned_data.get('phone'),
                 department=form.cleaned_data.get('department'),
                 employee_id=form.cleaned_data.get('employee_id'),
+                is_active=form.cleaned_data.get('is_active', True),
+                is_staff=form.cleaned_data.get('is_staff', False),
+                is_superuser=form.cleaned_data.get('is_superuser', False),
+                groups=form.cleaned_data.get('groups'),
+                user_permissions=form.cleaned_data.get('user_permissions'),
+                created_by=self.request.user,
             )
+            self.object = user
             messages.success(self.request, f"Usuario {user.username} creado correctamente")
-            return super().form_valid(form)
+            return HttpResponseRedirect(self.get_success_url())
         except Exception as e:
             messages.error(self.request, f"Error al crear usuario: {str(e)}")
             return self.form_invalid(form)
 
 
-class UserUpdateView(LoginRequiredMixin, UpdateView):
+class UserUpdateView(LoginRequiredMixin, StaffRequiredMixin, UpdateView):
     """
     Vista para editar usuarios.
     """
@@ -155,23 +184,29 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('core:user_list')
 
     def get_queryset(self):
-        return UserService.get_active_users()
+        return User.objects.all().prefetch_related('groups', 'user_permissions')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request_user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         try:
             user = UserService.update_user(
                 self.object,
-                **{k: v for k, v in form.cleaned_data.items()
-                   if k not in ['password1', 'password2']}
+                **{k: v for k, v in form.cleaned_data.items() if k not in ['password1', 'password2']},
+                updated_by=self.request.user,
             )
+            self.object = user
             messages.success(self.request, f"Usuario {user.username} actualizado correctamente")
-            return super().form_valid(form)
+            return HttpResponseRedirect(self.get_success_url())
         except Exception as e:
             messages.error(self.request, f"Error al actualizar usuario: {str(e)}")
             return self.form_invalid(form)
 
 
-class UserDeleteView(LoginRequiredMixin, DeleteView):
+class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, DeleteView):
     """
     Vista para eliminar usuarios (desactivar).
     """

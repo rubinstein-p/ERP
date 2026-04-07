@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Usuario{% else %}Nuevo Usuario{% endif %} - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-user-shield text-primary"></i>
+            {% if object %}Editar Usuario{% else %}Alta de Usuario{% endif %}
+        </h1>
+        <a href="{% url 'core:user_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-id-card text-secondary"></i> Datos básicos</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                    {% if field.name == 'username' or field.name == 'email' or field.name == 'first_name' or field.name == 'last_name' or field.name == 'phone' or field.name == 'department' or field.name == 'employee_id' or field.name == 'password1' or field.name == 'password2' %}
+                        <div class="col-md-6">
+                            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.help_text %}<small class="text-muted d-block">{{ field.help_text }}</small>{% endif %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-key text-warning"></i> Seguridad y permisos</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                    {% if field.name == 'is_active' or field.name == 'is_staff' or field.name == 'is_superuser' or field.name == 'groups' or field.name == 'user_permissions' %}
+                        <div class="{% if field.name == 'groups' or field.name == 'user_permissions' %}col-md-6{% else %}col-md-4{% endif %}">
+                            {% if field.field.widget.input_type == 'checkbox' %}
+                                <div class="form-check mt-4">
+                                    {{ field }}
+                                    <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                </div>
+                            {% else %}
+                                <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                            {% endif %}
+                            {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+        <a href="{% url 'core:user_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]').forEach(function(el) {
+        if (!el.classList.contains('form-check-input')) {
+            el.classList.add('form-control');
+        }
+    });
+    document.querySelectorAll('select').forEach(function(el) {
+        if (el.multiple) {
+            el.classList.add('form-select');
+            el.setAttribute('size', '8');
+        } else {
+            el.classList.add('form-select');
+        }
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
+        el.classList.add('form-check-input');
+    });
+</script>
+{% endblock %}

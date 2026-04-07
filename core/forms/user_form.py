@@ -1,6 +1,6 @@
 from django import forms
+from django.contrib.auth.models import Group, Permission
 from django.contrib.auth import password_validation
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.core.exceptions import ValidationError
 
 from core.models import User
@@ -20,6 +20,21 @@ class UserCreationForm(forms.ModelForm):
         widget=forms.PasswordInput,
         help_text="Repite la contraseña para verificar."
     )
+    is_active = forms.BooleanField(label="Activo", required=False, initial=True)
+    is_staff = forms.BooleanField(label="Es staff", required=False)
+    is_superuser = forms.BooleanField(label="Es superusuario", required=False)
+    groups = forms.ModelMultipleChoiceField(
+        label="Grupos",
+        queryset=Group.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple,
+    )
+    user_permissions = forms.ModelMultipleChoiceField(
+        label="Permisos directos",
+        queryset=Permission.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple,
+    )
 
     class Meta:
         model = User
@@ -28,6 +43,16 @@ class UserCreationForm(forms.ModelForm):
             'phone': forms.TextInput(attrs={'placeholder': '+34 600 000 000'}),
             'employee_id': forms.TextInput(attrs={'placeholder': 'EMP001'}),
         }
+
+    def __init__(self, *args, request_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request_user = request_user
+        self.fields['groups'].queryset = Group.objects.order_by('name')
+        self.fields['user_permissions'].queryset = Permission.objects.order_by('content_type__app_label', 'codename')
+
+        if not (request_user and request_user.is_superuser):
+            self.fields.pop('is_superuser')
+            self.fields.pop('user_permissions')
 
     def clean_password2(self):
         password1 = self.cleaned_data.get("password1")
@@ -62,13 +87,41 @@ class UserChangeForm(forms.ModelForm):
     """
     Formulario para la edición de usuarios.
     """
+    groups = forms.ModelMultipleChoiceField(
+        label="Grupos",
+        queryset=Group.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple,
+    )
+    user_permissions = forms.ModelMultipleChoiceField(
+        label="Permisos directos",
+        queryset=Permission.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple,
+    )
+
     class Meta:
         model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'phone', 'department', 'employee_id', 'is_active')
+        fields = (
+            'username', 'email', 'first_name', 'last_name', 'phone', 'department', 'employee_id',
+            'is_active', 'is_staff', 'is_superuser',
+        )
         widgets = {
             'phone': forms.TextInput(attrs={'placeholder': '+34 600 000 000'}),
             'employee_id': forms.TextInput(attrs={'placeholder': 'EMP001'}),
         }
+
+    def __init__(self, *args, request_user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.request_user = request_user
+        self.fields['groups'].queryset = Group.objects.order_by('name')
+        self.fields['groups'].initial = self.instance.groups.all()
+        self.fields['user_permissions'].queryset = Permission.objects.order_by('content_type__app_label', 'codename')
+        self.fields['user_permissions'].initial = self.instance.user_permissions.all()
+
+        if not (request_user and request_user.is_superuser):
+            self.fields.pop('is_superuser')
+            self.fields.pop('user_permissions')
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
