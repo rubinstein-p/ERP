@@ -1,140 +1,93 @@
 # ERP Django
 
-Sistema de planificación de recursos empresariales (ERP) desarrollado con Django.
+Sistema ERP modular desarrollado con Django.
 
-## Descripción
+## Estado actual
 
-Este proyecto implementa un ERP modular con las siguientes funcionalidades:
-- Gestión de usuarios y seguridad (Core)
-- Maestros (clientes, proveedores, productos)
-- Compras
-- Ventas
-- Inventario
-- Contabilidad
-- Reportes
+El proyecto tiene un módulo funcional y varios módulos base preparados para crecer:
+
+- `core`: implementado y operativo. Incluye autenticación, gestión de usuarios, roles, permisos, auditoría y parámetros del sistema.
+- `masters`, `purchases`, `sales`, `inventory`, `accounting`, `reports`: apps scaffolded, todavía sin modelos, servicios ni vistas de negocio implementadas.
 
 ## Arquitectura
 
-El sistema sigue una arquitectura modular donde cada dominio es una app Django independiente:
+El sistema sigue una arquitectura modular por dominio. El patrón de referencia está implementado en `core`:
 
-- `core`: Seguridad, usuarios, auditoría, parámetros
-- `masters`: Datos maestros (clientes, proveedores, productos, categorías)
-- `purchases`: Gestión de compras y proveedores
-- `sales`: Gestión de ventas y clientes
-- `inventory`: Control de inventario y movimientos
-- `accounting`: Contabilidad e integración financiera
-- `reports`: Reportes y dashboards
+- `models/`: entidades y modelos compartidos
+- `services/`: lógica de negocio
+- `forms/`: validaciones y formularios
+- `views/`: vistas basadas en clases
+- `templates/`: interfaz de usuario
+
+La documentación ampliada de arquitectura, estado y convenciones está en:
+
+- `documentacion/ARQUITECTURA_Y_ESTADO_ACTUAL.md`
+- `documentacion/IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md`
+- `documentacion/IMPLEMENTACION_RESET_PASSWORD.md`
+- `documentacion/REVISION_TECNICA_2026-04-11.md`
 
 ## Requisitos
 
-- Python 3.8+
-- Django 6.0+
-- PostgreSQL (producción) / SQLite (desarrollo)
+- Python 3.12+
+- Django 6.x
+- Base de datos configurable por `DATABASE_URL`
 
 ## Instalación
 
-1. Clonar el repositorio:
-```bash
-git clone <url-del-repositorio>
-cd erp-django
-```
+1. Clonar el repositorio.
+2. Crear el entorno virtual.
+3. Instalar dependencias con `pip install -r requirements.txt`.
+4. Crear el archivo `.env` a partir de `.env.example`.
+5. Ejecutar migraciones con `python manage.py migrate`.
+6. Crear superusuario con `python manage.py createsuperuser`.
+7. Levantar el servidor con `python manage.py runserver`.
 
-2. Crear entorno virtual:
-```bash
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-```
+## Variables de entorno
 
-3. Instalar dependencias:
-```bash
-pip install -r requirements.txt
-```
+Variables mínimas:
 
-4. Configurar variables de entorno:
-```bash
-cp .env.example .env
-# Editar .env con tus configuraciones
-```
-
-5. Ejecutar migraciones:
-```bash
-python manage.py migrate
-```
-
-6. Crear superusuario:
-```bash
-python manage.py createsuperuser
-```
-
-7. Ejecutar servidor de desarrollo:
-```bash
-python manage.py runserver
-```
-
-## Estructura del proyecto
-
-```
-erp/
-├── manage.py
-├── requirements.txt
-├── .env
-├── erp/                     # Configuración global
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── core/                    # Seguridad y usuarios
-├── masters/                 # Datos maestros
-├── purchases/               # Compras
-├── sales/                   # Ventas
-├── inventory/              # Inventario
-├── accounting/             # Contabilidad
-├── reports/                # Reportes
-├── templates/              # Plantillas globales
-└── static/                 # Archivos estáticos
-```
+- `SECRET_KEY`
+- `DEBUG`
+- `ALLOWED_HOSTS`
+- `DATABASE_URL`
+- `LANGUAGE_CODE`
+- `TIME_ZONE`
+- `EMAIL_BACKEND`
+- `EMAIL_HOST`
+- `EMAIL_PORT`
+- `EMAIL_USE_TLS`
+- `EMAIL_USE_SSL`
+- `EMAIL_HOST_USER`
+- `EMAIL_HOST_PASSWORD`
+- `DEFAULT_FROM_EMAIL`
+- `LOGIN_MAX_ATTEMPTS`
+- `LOGIN_LOCKOUT_SECONDS`
+- `PASSWORD_RESET_TIMEOUT`
 
 ## Desarrollo
 
-## Documentacion Tecnica
+Convenciones actuales del proyecto:
 
-- Implementacion de seguridad y accesos: `documentacion/IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md`
+- arquitectura modular por dominios
+- lógica de negocio en servicios
+- vistas basadas en clases
+- documentación en español
+- tests centralizados en paquetes `tests/` por app cuando la app los necesite
 
-### Convenciones
-- Usar arquitectura modular por dominios
-- Toda lógica de negocio en servicios
-- Vistas basadas en clases (CBV)
-- Tests unitarios obligatorios
-- Documentación en español
-
-### Comandos útiles
+## Comandos útiles
 
 ```bash
-# Ejecutar tests
+python manage.py check
 python manage.py test
-
-# Crear nueva app
-python manage.py startapp nueva_app
-
-# Crear migraciones
 python manage.py makemigrations
-
-# Ejecutar migraciones
 python manage.py migrate
-
-# Ejecutar linter
-flake8
-
-# Formatear código
-black .
-isort .
+python manage.py create_default_roles
 ```
 
-## Contribución
+## Observaciones importantes
 
-1. Crear rama desde `develop`
-2. Implementar cambios siguiendo la arquitectura
-3. Escribir tests
-4. Hacer pull request
+- La suite de tests del proyecto ya no debe mezclar `tests.py` con paquetes `tests/` dentro de la misma app.
+- El único módulo con funcionalidad de negocio implementada hoy es `core`; el resto está documentado como roadmap técnico y no como funcionalidad terminada.
 
 ## Licencia
 
