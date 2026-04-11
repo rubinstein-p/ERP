@@ -1,5 +1,7 @@
 from .user_views import (
     HomeView, LoginView, LogoutView, DashboardView,
+    UserPasswordResetView, UserPasswordResetDoneView,
+    UserPasswordResetConfirmView, UserPasswordResetCompleteView,
     UserListView, UserDetailView, UserCreateView, UserUpdateView, UserDeleteView,
     ProfileView, PasswordChangeView
 )
@@ -14,6 +16,8 @@ from .role_views import (
 
 __all__ = [
     'HomeView', 'LoginView', 'LogoutView', 'DashboardView',
+    'UserPasswordResetView', 'UserPasswordResetDoneView',
+    'UserPasswordResetConfirmView', 'UserPasswordResetCompleteView',
     'UserListView', 'UserDetailView', 'UserCreateView', 'UserUpdateView', 'UserDeleteView',
     'ProfileView', 'PasswordChangeView',
     'SystemParameterListView', 'SystemParameterDetailView',

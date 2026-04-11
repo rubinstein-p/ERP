@@ -1,6 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import (
+    PasswordResetView, PasswordResetDoneView,
+    PasswordResetConfirmView, PasswordResetCompleteView
+)
 from django.db.models import Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import redirect
@@ -72,6 +76,26 @@ class LoginView(FormView):
         if request.user.is_authenticated:
             return redirect('core:dashboard')
         return super().get(request, *args, **kwargs)
+
+
+class UserPasswordResetView(PasswordResetView):
+    template_name = 'core/password_reset_form.html'
+    email_template_name = 'core/password_reset_email.txt'
+    subject_template_name = 'core/password_reset_subject.txt'
+    success_url = reverse_lazy('core:password_reset_done')
+
+
+class UserPasswordResetDoneView(PasswordResetDoneView):
+    template_name = 'core/password_reset_done.html'
+
+
+class UserPasswordResetConfirmView(PasswordResetConfirmView):
+    template_name = 'core/password_reset_confirm.html'
+    success_url = reverse_lazy('core:password_reset_complete')
+
+
+class UserPasswordResetCompleteView(PasswordResetCompleteView):
+    template_name = 'core/password_reset_complete.html'
 
 
 class LogoutView(LoginRequiredMixin, FormView):

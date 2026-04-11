@@ -682,3 +682,68 @@ class AccessDeniedAuditTest(TestCase):
         log = AuditLog.objects.filter(action='ACCESS_DENIED', object_repr='/users/').latest('id')
         self.assertIn('request_id', log.changes)
         self.assertEqual(log.changes['request_id'], response.headers['X-Request-ID'])
+
+
+class PasswordResetFlowTest(TestCase):
+    """
+    Tests para el flujo de olvido de contraseña.
+    """
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='reset_user',
+            email='reset@example.com',
+            password='ResetPass123',
+        )
+
+    def test_password_reset_email_sent(self):
+        from django.core import mail
+        from django.urls import reverse
+
+        response = self.client.post(
+            reverse('core:password_reset'),
+            {'email': self.user.email},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('Restablecimiento de contraseña', mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+
+    def test_password_reset_confirm_can_set_new_password(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.core import mail
+        from django.urls import reverse
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+
+        mail.outbox = []
+        self.client.post(
+            reverse('core:password_reset'),
+            {'email': self.user.email},
+            follow=True,
+        )
+
+        self.assertEqual(len(mail.outbox), 1)
+
+        uid = urlsafe_base64_encode(force_bytes(self.user.pk))
+        token = default_token_generator.make_token(self.user)
+        url = reverse('core:password_reset_confirm', kwargs={'uidb64': uid, 'token': token})
+
+        response = self.client.get(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        confirm_path = response.request['PATH_INFO']
+        response = self.client.post(
+            confirm_path,
+            {
+                'new_password1': 'NewPass1234',
+                'new_password2': 'NewPass1234',
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('NewPass1234'))

@@ -2,6 +2,8 @@ from django.urls import path
 
 from core.views import (
     HomeView, LoginView, LogoutView, DashboardView,
+    UserPasswordResetView, UserPasswordResetDoneView,
+    UserPasswordResetConfirmView, UserPasswordResetCompleteView,
     UserListView, UserDetailView, UserCreateView, UserUpdateView, UserDeleteView,
     ProfileView, PasswordChangeView,
     RoleListView, RoleDetailView, RoleCreateView, RoleUpdateView, RoleDeleteView,
@@ -19,6 +21,11 @@ urlpatterns = [
     # Autenticación
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('password-reset/', UserPasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/done/', UserPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('password-reset/confirm/<uidb64>/<token>/', UserPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password-reset/confirm/<uidb64>/set-password/', UserPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password-reset/complete/', UserPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     # Dashboard
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
