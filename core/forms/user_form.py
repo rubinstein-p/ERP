@@ -191,6 +191,39 @@ class PasswordChangeForm(forms.Form):
         return self.user
 
 
+class AdminPasswordChangeForm(forms.Form):
+    """
+    Formulario para que administradores cambien la contraseña de un usuario.
+    """
+    new_password1 = forms.CharField(
+        label="Nueva contraseña",
+        widget=forms.PasswordInput,
+        help_text="La contraseña debe tener al menos 8 caracteres."
+    )
+    new_password2 = forms.CharField(
+        label="Confirmar nueva contraseña",
+        widget=forms.PasswordInput
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_new_password2(self):
+        password1 = self.cleaned_data.get("new_password1")
+        password2 = self.cleaned_data.get("new_password2")
+        if password1 and password2 and password1 != password2:
+            raise ValidationError("Las contraseñas no coinciden")
+        if password2:
+            password_validation.validate_password(password2, self.user)
+        return password2
+
+    def save(self):
+        self.user.set_password(self.cleaned_data['new_password1'])
+        self.user.save()
+        return self.user
+
+
 class LoginForm(forms.Form):
     """
     Formulario de inicio de sesión.

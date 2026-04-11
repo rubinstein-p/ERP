@@ -14,7 +14,7 @@ from django.views.generic.edit import FormView
 
 from core.forms import (
     UserCreationForm, UserChangeForm, UserProfileForm,
-    PasswordChangeForm, LoginForm
+    PasswordChangeForm, LoginForm, AdminPasswordChangeForm
 )
 from core.models import AuditLog
 from core.models import User
@@ -285,6 +285,44 @@ class UserDeleteView(LoginRequiredMixin, StaffRequiredMixin, PermissionAuditRequ
         except Exception as e:
             messages.error(request, f"Error al desactivar usuario: {str(e)}")
         return redirect(self.success_url)
+
+
+class UserPasswordChangeView(LoginRequiredMixin, StaffRequiredMixin, FormView):
+    """
+    Vista para que administradores cambien la contraseña de un usuario.
+    """
+    template_name = 'core/user_password_change.html'
+    form_class = AdminPasswordChangeForm
+    success_url = reverse_lazy('core:user_list')
+
+    def get_user(self):
+        return User.objects.get(pk=self.kwargs['pk'])
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.get_user()
+        return kwargs
+
+    def form_valid(self, form):
+        user = self.get_user()
+        form.save()
+        AuditLog.objects.create(
+            user=self.request.user,
+            action='PASSWORD_CHANGE',
+            model_name='User',
+            object_id=user.id,
+            object_repr=str(user),
+            changes={'action': 'admin_password_change', 'target_user': user.username},
+            ip_address=self.request.META.get('HTTP_X_FORWARDED_FOR', self.request.META.get('REMOTE_ADDR')),
+            user_agent=self.request.META.get('HTTP_USER_AGENT', ''),
+        )
+        messages.success(self.request, f"Contraseña de {user.username} cambiada correctamente")
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['target_user'] = self.get_user()
+        return context
 
 
 class ProfileView(LoginRequiredMixin, UpdateView):

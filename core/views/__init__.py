@@ -2,7 +2,7 @@ from .user_views import (
     HomeView, LoginView, LogoutView, DashboardView,
     UserPasswordResetView, UserPasswordResetDoneView,
     UserPasswordResetConfirmView, UserPasswordResetCompleteView,
-    UserListView, UserDetailView, UserCreateView, UserUpdateView, UserDeleteView,
+    UserListView, UserDetailView, UserCreateView, UserUpdateView, UserDeleteView, UserPasswordChangeView,
     ProfileView, PasswordChangeView
 )
 from .parameter_views import (
@@ -18,7 +18,7 @@ __all__ = [
     'HomeView', 'LoginView', 'LogoutView', 'DashboardView',
     'UserPasswordResetView', 'UserPasswordResetDoneView',
     'UserPasswordResetConfirmView', 'UserPasswordResetCompleteView',
-    'UserListView', 'UserDetailView', 'UserCreateView', 'UserUpdateView', 'UserDeleteView',
+    'UserListView', 'UserDetailView', 'UserCreateView', 'UserUpdateView', 'UserDeleteView', 'UserPasswordChangeView',
     'ProfileView', 'PasswordChangeView',
     'SystemParameterListView', 'SystemParameterDetailView',
     'SystemParameterCreateView', 'SystemParameterUpdateView', 'SystemParameterDeleteView',
