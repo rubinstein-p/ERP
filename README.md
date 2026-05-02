@@ -2,12 +2,33 @@
 
 Sistema ERP modular desarrollado con Django.
 
+## 📖 Documentación
+
+**Índice central:** [`documentacion/INDEX.md`](documentacion/INDEX.md) - Navegación completa de toda la documentación.
+
+### Guías principales (2026-05-02)
+
+| Guía | Propósito | Audiencia | Tiempo |
+|------|----------|-----------|--------|
+| [GUIA_DESARROLLO.md](documentacion/GUIA_DESARROLLO.md) | Crear nuevos módulos paso a paso | Devs | 30 min |
+| [GUIA_TESTING.md](documentacion/GUIA_TESTING.md) | Tests unitarios e integración | Devs | 30 min |
+| [GUIA_DEPLOYMENT.md](documentacion/GUIA_DEPLOYMENT.md) | Deploy a producción | DevOps | 45 min |
+| [REFERENCIA_ENDPOINTS.md](documentacion/REFERENCIA_ENDPOINTS.md) | Todos los endpoints disponibles | Todos | 10 min |
+| [FAQ_TROUBLESHOOTING.md](documentacion/FAQ_TROUBLESHOOTING.md) | Preguntas frecuentes y soluciones | Todos | Variable |
+
+### Documentación de referencia
+
+- [ARQUITECTURA_Y_ESTADO_ACTUAL.md](documentacion/ARQUITECTURA_Y_ESTADO_ACTUAL.md) - Patrón arquitectónico, estado del proyecto
+- [IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md](documentacion/IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md) - Detalles de seguridad
+- [IMPLEMENTACION_RESET_PASSWORD.md](documentacion/IMPLEMENTACION_RESET_PASSWORD.md) - Flujo de reset de contraseña
+- [REVISION_TECNICA_2026-04-11.md](documentacion/REVISION_TECNICA_2026-04-11.md) - Problemas resueltos, recomendaciones
+
 ## Estado actual
 
 El proyecto tiene un módulo funcional y varios módulos base preparados para crecer:
 
 - `core`: implementado y operativo. Incluye autenticación, gestión de usuarios, roles, permisos, auditoría y parámetros del sistema.
-- `masters`, `purchases`, `sales`, `inventory`, `accounting`, `reports`: apps scaffolded, todavía sin modelos, servicios ni vistas de negocio implementadas.
+- `masters`, `purchases`, `sales`, `inventory`, `accounting`, `reports`: apps scaffolded, listos para implementar siguiendo [`GUIA_DESARROLLO.md`](documentacion/GUIA_DESARROLLO.md).
 
 ## Arquitectura
 
@@ -19,12 +40,7 @@ El sistema sigue una arquitectura modular por dominio. El patrón de referencia 
 - `views/`: vistas basadas en clases
 - `templates/`: interfaz de usuario
 
-La documentación ampliada de arquitectura, estado y convenciones está en:
-
-- `documentacion/ARQUITECTURA_Y_ESTADO_ACTUAL.md`
-- `documentacion/IMPLEMENTACION_SEGURIDAD_Y_ACCESOS.md`
-- `documentacion/IMPLEMENTACION_RESET_PASSWORD.md`
-- `documentacion/REVISION_TECNICA_2026-04-11.md`
+Ver [`ARQUITECTURA_Y_ESTADO_ACTUAL.md`](documentacion/ARQUITECTURA_Y_ESTADO_ACTUAL.md) para detalles.
 
 ## Requisitos
 
@@ -66,13 +82,18 @@ Variables mínimas:
 
 ## Desarrollo
 
-Convenciones actuales del proyecto:
+Para crear nuevos módulos, consulta [`GUIA_DESARROLLO.md`](documentacion/GUIA_DESARROLLO.md).
 
-- arquitectura modular por dominios
-- lógica de negocio en servicios
-- vistas basadas en clases
+Convenciones del proyecto:
+
+- arquitectura modular por dominios (ver [`ARQUITECTURA_Y_ESTADO_ACTUAL.md`](documentacion/ARQUITECTURA_Y_ESTADO_ACTUAL.md))
+- lógica de negocio centralizada en servicios
+- vistas basadas en clases (CBV)
 - documentación en español
-- tests centralizados en paquetes `tests/` por app cuando la app los necesite
+- tests unitarios en paquetes `tests/` por app
+- cobertura de código mínima: 80%
+
+Para escribir tests, consulta [`GUIA_TESTING.md`](documentacion/GUIA_TESTING.md).
 
 ## Comandos útiles
 
@@ -86,8 +107,10 @@ python manage.py create_default_roles
 
 ## Observaciones importantes
 
-- La suite de tests del proyecto ya no debe mezclar `tests.py` con paquetes `tests/` dentro de la misma app.
-- El único módulo con funcionalidad de negocio implementada hoy es `core`; el resto está documentado como roadmap técnico y no como funcionalidad terminada.
+- No mezcles `tests.py` con paquete `tests/` en la misma app
+- Solo `core` tiene funcionalidad implementada; el resto está scaffolded y listo para desarrollar
+- Antes de hacer deploy, consulta [`GUIA_DEPLOYMENT.md`](documentacion/GUIA_DEPLOYMENT.md)
+- Si tienes problemas, consulta [`FAQ_TROUBLESHOOTING.md`](documentacion/FAQ_TROUBLESHOOTING.md)
 
 ## Licencia
 
