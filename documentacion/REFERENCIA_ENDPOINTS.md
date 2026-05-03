@@ -497,6 +497,51 @@ GET /parameters/?search=email&category=email&page=1
 
 ---
 
+## Endpoints de Ventas (ABM)
+
+### Listar Ventas
+
+| Método | URL | Autenticación | Descripción | Permisos |
+|--------|-----|---------------|-----------|-----------|
+| GET | `/sales/` | Sí | Listar ventas activas con filtros | `sales.view_sale` + usuario staff |
+
+**Parámetros de query:**
+```
+GET /sales/?search=SALE-00001&status=draft&page=1
+```
+
+- `search`: búsqueda por número, cliente o email
+- `status`: `all`, `draft`, `confirmed`, `shipped`, `delivered`, `cancelled`
+
+### Crear Venta
+
+| Método | URL | Autenticación | Descripción | Permisos |
+|--------|-----|---------------|-----------|-----------|
+| GET | `/sales/create/` | Sí | Formulario de alta de venta | `sales.add_sale` + usuario staff |
+| POST | `/sales/create/` | Sí | Crear venta | `sales.add_sale` + usuario staff |
+
+### Ver Detalle de Venta
+
+| Método | URL | Autenticación | Descripción | Permisos |
+|--------|-----|---------------|-----------|-----------|
+| GET | `/sales/<id>/` | Sí | Ver detalle de venta e ítems | `sales.view_sale` + usuario staff |
+
+### Editar Venta
+
+| Método | URL | Autenticación | Descripción | Permisos |
+|--------|-----|---------------|-----------|-----------|
+| GET | `/sales/<id>/edit/` | Sí | Formulario de edición | `sales.change_sale` + usuario staff |
+| POST | `/sales/<id>/edit/` | Sí | Actualizar venta | `sales.change_sale` + usuario staff |
+
+### Eliminar Venta (Soft Delete)
+
+| Método | URL | Autenticación | Descripción | Permisos |
+|--------|-----|---------------|-----------|-----------|
+| GET | `/sales/<id>/delete/` | Sí | Confirmación de baja lógica | `sales.delete_sale` + usuario staff |
+| POST | `/sales/<id>/delete/` | Sí | Marcar venta como inactiva | `sales.delete_sale` + usuario staff |
+
+---
+
 ## Códigos de Estado HTTP
 
 | Código | Significado | Causa Común |
@@ -532,7 +577,7 @@ GET /parameters/?search=email&category=email&page=1
 | `change_systemparameter` | Editar parámetros |
 | `delete_systemparameter` | Eliminar parámetros |
 
-### Sales (cuando esté implementado)
+### Sales
 
 | Permiso | Descripción |
 |---------|-----------|
@@ -604,7 +649,6 @@ Después de 5 intentos fallidos de login, la cuenta se bloquea por 15 minutos.
 
 Cuando se implementen módulos, se agregarán endpoints:
 
-- `/sales/` (Ventas)
 - `/purchases/` (Compras)
 - `/inventory/` (Inventario)
 - `/accounting/` (Contabilidad)

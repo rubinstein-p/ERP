@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Presupuesto{% else %}Nuevo Presupuesto{% endif %} - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-file-invoice text-warning"></i>
+            {% if object %}Editar Presupuesto {{ object.quote_number }}{% else %}Nuevo Presupuesto{% endif %}
+        </h1>
+        <a href="{% url 'sales:quote_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.customer_name.label }}</label>
+                    {{ form.customer_name }}
+                    {% if form.customer_name.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer_name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.customer_email.label }}</label>
+                    {{ form.customer_email }}
+                    {% if form.customer_email.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer_email.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.customer_phone.label }}</label>
+                    {{ form.customer_phone }}
+                    {% if form.customer_phone.errors %}
+                        <div class="text-danger small mt-1">{{ form.customer_phone.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">{{ form.valid_until.label }}</label>
+                    {{ form.valid_until }}
+                    {% if form.valid_until.errors %}
+                        <div class="text-danger small mt-1">{{ form.valid_until.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">{{ form.notes.label }}</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}
+                        <div class="text-danger small mt-1">{{ form.notes.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <h5 class="mb-3"><i class="fas fa-box text-secondary"></i> Productos</h5>
+            {{ item_formset.management_form }}
+            <div id="quote-items-container" class="vstack gap-3">
+                {% for item_form in item_formset %}
+                    <div class="border rounded p-3 quote-item-row">
+                        {% if item_form.non_field_errors %}
+                            <div class="text-danger small mb-2">{{ item_form.non_field_errors }}</div>
+                        {% endif %}
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">{{ item_form.product.label }}</label>
+                                {{ item_form.product }}
+                                {% if item_form.product.errors %}<div class="text-danger small mt-1">{{ item_form.product.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">{{ item_form.quantity.label }}</label>
+                                {{ item_form.quantity }}
+                                {% if item_form.quantity.errors %}<div class="text-danger small mt-1">{{ item_form.quantity.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ item_form.unit_price.label }}</label>
+                                {{ item_form.unit_price }}
+                                {% if item_form.unit_price.errors %}<div class="text-danger small mt-1">{{ item_form.unit_price.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quitar</label>
+                                {% if item_form.DELETE %}
+                                    <div class="form-check">{{ item_form.DELETE }} <span class="small">Eliminar</span></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <template id="quote-empty-form-template">
+                <div class="border rounded p-3 quote-item-row mt-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label">{{ item_formset.empty_form.product.label }}</label>
+                            {{ item_formset.empty_form.product }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ item_formset.empty_form.quantity.label }}</label>
+                            {{ item_formset.empty_form.quantity }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ item_formset.empty_form.unit_price.label }}</label>
+                            {{ item_formset.empty_form.unit_price }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quitar</label>
+                            <div class="form-check">{{ item_formset.empty_form.DELETE }} <span class="small">Eliminar</span></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <div class="mt-3">
+                <button type="button" id="add-quote-item" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-plus"></i> Agregar producto
+                </button>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-warning text-white">
+                    <i class="fas fa-save"></i> {% if object %}Guardar cambios{% else %}Crear presupuesto{% endif %}
+                </button>
+                <a href="{% url 'sales:quote_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const addBtn = document.getElementById('add-quote-item');
+        const container = document.getElementById('quote-items-container');
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const template = document.getElementById('quote-empty-form-template');
+
+        if (!addBtn || !container || !totalForms || !template) {
+            return;
+        }
+
+        addBtn.addEventListener('click', function () {
+            const index = parseInt(totalForms.value, 10);
+            const html = template.innerHTML.replaceAll('__prefix__', index);
+            container.insertAdjacentHTML('beforeend', html);
+            totalForms.value = index + 1;
+        });
+    })();
+</script>
+{% endblock %}

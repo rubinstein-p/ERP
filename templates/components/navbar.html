@@ -22,16 +22,64 @@
                         </a>
                     </li>
                     {% if user.is_staff or user.is_superuser %}
+                        {% if user.is_superuser or perms.core.view_user %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'core:user_list' %}">
                                 <i class="fas fa-user-shield"></i> Seguridad
                             </a>
                         </li>
+                        {% endif %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="fas fa-shopping-cart"></i> Ventas
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if perms.sales.view_quote %}
+                                <li><a class="dropdown-item" href="{% url 'sales:quote_list' %}">
+                                    <i class="fas fa-file-invoice text-warning"></i> Presupuestos
+                                </a></li>
+                                {% endif %}
+                                {% if perms.sales.view_order %}
+                                <li><a class="dropdown-item" href="{% url 'sales:order_list' %}">
+                                    <i class="fas fa-clipboard-list text-info"></i> Pedidos
+                                </a></li>
+                                {% endif %}
+                                {% if perms.sales.view_sale %}
+                                <li><a class="dropdown-item" href="{% url 'sales:sale_list' %}">
+                                    <i class="fas fa-cash-register text-primary"></i> Ventas
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                <i class="fas fa-cube"></i> Maestros
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% if perms.masters.view_product %}
+                                <li><a class="dropdown-item" href="{% url 'masters:product-list' %}">
+                                    <i class="fas fa-cube text-primary"></i> Productos
+                                </a></li>
+                                {% endif %}
+                                {% if perms.masters.view_category %}
+                                <li><a class="dropdown-item" href="{% url 'masters:category-list' %}">
+                                    <i class="fas fa-folder text-secondary"></i> Categorías
+                                </a></li>
+                                {% endif %}
+                                {% if perms.masters.view_supplier %}
+                                <li><a class="dropdown-item" href="{% url 'masters:supplier-list' %}">
+                                    <i class="fas fa-truck text-info"></i> Proveedores
+                                </a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        {% if user.is_superuser or perms.auth.view_group %}
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'core:role_list' %}">
                                 <i class="fas fa-user-tag"></i> Roles
                             </a>
                         </li>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
             </ul>

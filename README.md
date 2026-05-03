@@ -28,7 +28,8 @@ Sistema ERP modular desarrollado con Django.
 El proyecto tiene un módulo funcional y varios módulos base preparados para crecer:
 
 - `core`: implementado y operativo. Incluye autenticación, gestión de usuarios, roles, permisos, auditoría y parámetros del sistema.
-- `masters`, `purchases`, `sales`, `inventory`, `accounting`, `reports`: apps scaffolded, listos para implementar siguiendo [`GUIA_DESARROLLO.md`](documentacion/GUIA_DESARROLLO.md).
+- `sales`: implementado y operativo. Incluye modelo de ventas, ítems de venta, lógica de negocio, CRUD web, admin y suite de tests.
+- `masters`, `purchases`, `inventory`, `accounting`, `reports`: apps scaffolded, listas para implementar siguiendo [`GUIA_DESARROLLO.md`](documentacion/GUIA_DESARROLLO.md).
 
 ## Arquitectura
 
@@ -108,7 +109,7 @@ python manage.py create_default_roles
 ## Observaciones importantes
 
 - No mezcles `tests.py` con paquete `tests/` en la misma app
-- Solo `core` tiene funcionalidad implementada; el resto está scaffolded y listo para desarrollar
+- Módulos funcionales actuales: `core` y `sales`
 - Antes de hacer deploy, consulta [`GUIA_DEPLOYMENT.md`](documentacion/GUIA_DEPLOYMENT.md)
 - Si tienes problemas, consulta [`FAQ_TROUBLESHOOTING.md`](documentacion/FAQ_TROUBLESHOOTING.md)
 

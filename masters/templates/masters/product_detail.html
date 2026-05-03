@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}{{ object.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h2><i class="fas fa-cube"></i> {{ object.name }}</h2>
+            <small class="text-muted">SKU: <code>{{ object.sku }}</code></small>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{% url 'masters:product-update' object.pk %}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{% url 'masters:product-delete' object.pk %}" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Eliminar
+            </a>
+            <a href="{% url 'masters:product-list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Información Básica</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>SKU:</strong> <code>{{ object.sku }}</code>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Nombre:</strong> {{ object.name }}
+                        </div>
+                    </div>
+                    {% if object.description %}
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <strong>Descripción:</strong>
+                                <p>{{ object.description }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Categoría:</strong> 
+                            <a href="{% url 'masters:category-detail' object.category.pk %}">{{ object.category.name }}</a>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Proveedor:</strong> 
+                            {% if object.supplier %}
+                                <a href="{% url 'masters:supplier-detail' object.supplier.pk %}">{{ object.supplier.name }}</a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Creado:</strong> {{ object.created_at|date:"d/m/Y H:i" }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Actualizado:</strong> {{ object.updated_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if inventory %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-boxes"></i> Inventario</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4 mb-3">
+                                <div class="display-4 text-success">{{ inventory.quantity }}</div>
+                                <small class="text-muted">En Stock</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="display-4 text-warning">{{ inventory.reserved_quantity }}</div>
+                                <small class="text-muted">Reservado</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="display-4 text-info">{{ inventory.available_quantity }}</div>
+                                <small class="text-muted">Disponible</small>
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <small>Última actualización: {{ inventory.updated_at|date:"d/m/Y H:i" }}</small>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="mb-0">Precios</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-12">
+                            <div class="display-5">${{ object.base_price }}</div>
+                            <small class="text-muted">Precio Base</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

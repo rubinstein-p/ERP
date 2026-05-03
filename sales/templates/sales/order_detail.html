@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Pedido - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0"><i class="fas fa-clipboard-list text-info"></i> {{ order.order_number }}</h1>
+        <div class="d-flex gap-2">
+            {% if order.order_status != 'cancelled' %}
+            <form method="post" action="{% url 'sales:order_convert_to_sale' order.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary"
+                    onclick="return confirm('¿Convertir este pedido en una venta?')">
+                    <i class="fas fa-cash-register"></i> Convertir a Venta
+                </button>
+            </form>
+            {% endif %}
+            <a href="{% url 'sales:order_update' order.id %}" class="btn btn-outline-primary"><i class="fas fa-pen"></i> Editar</a>
+            <a href="{% url 'sales:order_delete' order.id %}" class="btn btn-outline-danger"><i class="fas fa-trash"></i> Eliminar</a>
+            <a href="{% url 'sales:order_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+{% if order.quote %}
+<div class="alert alert-warning d-flex align-items-center mb-4">
+    <i class="fas fa-file-invoice me-2"></i>
+    Generado desde el presupuesto
+    <a href="{% url 'sales:quote_detail' order.quote.id %}" class="ms-1 fw-bold">{{ order.quote.quote_number }}</a>.
+</div>
+{% endif %}
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h5 class="mb-0">Información del cliente</h5></div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Cliente:</strong> {{ order.customer_name }}</p>
+                <p class="mb-2"><strong>Email:</strong> {{ order.customer_email|default:'-' }}</p>
+                <p class="mb-2"><strong>Teléfono:</strong> {{ order.customer_phone|default:'-' }}</p>
+                <p class="mb-2"><strong>Vendedor:</strong> {{ order.seller.get_full_name|default:order.seller.username }}</p>
+                <p class="mb-0"><strong>Notas:</strong> {{ order.notes|default:'-' }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h5 class="mb-0">Resumen</h5></div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Fecha:</strong> {{ order.order_date|date:'d/m/Y' }}</p>
+                <p class="mb-2"><strong>Entrega estimada:</strong> {{ order.expected_delivery|date:'d/m/Y'|default:'-' }}</p>
+                <p class="mb-2"><strong>Estado:</strong> <span class="badge text-bg-info">{{ order.get_order_status_display }}</span></p>
+                <hr>
+                <p class="mb-2"><strong>Subtotal:</strong> ${{ order.subtotal|floatformat:2 }}</p>
+                <p class="mb-2"><strong>Impuestos:</strong> ${{ order.tax|floatformat:2 }}</p>
+                <p class="mb-0 fs-5"><strong>Total:</strong> ${{ order.total|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><h5 class="mb-0">Items</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio unitario</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.unit_price|floatformat:2 }}</td>
+                        <td>${{ item.get_total|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3">Sin items registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if order.sales.exists %}
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white"><h5 class="mb-0">Ventas generadas</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr><th>Número</th><th>Estado</th><th>Total</th><th>Fecha</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for sale in order.sales.all %}
+                <tr>
+                    <td class="fw-semibold">{{ sale.sale_number }}</td>
+                    <td><span class="badge text-bg-primary">{{ sale.get_sale_status_display }}</span></td>
+                    <td>${{ sale.total|floatformat:2 }}</td>
+                    <td>{{ sale.sale_date|date:'d/m/Y' }}</td>
+                    <td><a href="{% url 'sales:sale_detail' sale.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-eye"></i></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

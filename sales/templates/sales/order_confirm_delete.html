@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar Pedido - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Confirmar eliminación</h5>
+            </div>
+            <div class="card-body text-center py-4">
+                <p class="fs-5 mb-1">¿Estás seguro de eliminar el pedido</p>
+                <p class="fw-bold fs-4 text-danger">{{ object.order_number }}</p>
+                <p class="text-muted">Cliente: {{ object.customer_name }}</p>
+                <p class="text-muted small">Esta acción es reversible solo desde el administrador.</p>
+            </div>
+            <div class="card-footer bg-white d-flex justify-content-center gap-3">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Sí, eliminar
+                    </button>
+                </form>
+                <a href="{% url 'sales:order_detail' object.id %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Cancelar
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

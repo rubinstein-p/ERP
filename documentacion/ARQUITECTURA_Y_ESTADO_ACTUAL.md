@@ -1,9 +1,9 @@
 # Arquitectura y Estado Actual del ERP
 
-Fecha: 2026-04-11
+Fecha: 2026-05-02
 
 ## 1) Objetivo del repositorio
-Este repositorio implementa un ERP modular en Django. En el estado actual, el dominio funcional completo está concentrado en la app `core`, mientras que el resto de las apps existen como base estructural para futuras iteraciones.
+Este repositorio implementa un ERP modular en Django. En el estado actual, los dominios funcionales activos son `core` y `sales`, mientras que el resto de las apps existen como base estructural para futuras iteraciones.
 
 ## 2) Estado por módulo
 
@@ -17,10 +17,18 @@ Este repositorio implementa un ERP modular en Django. En el estado actual, el do
   - parámetros del sistema
   - auditoría de eventos
 
+- `sales`
+  - modelo de ventas (`Sale`) e ítems (`SaleItem`)
+  - lógica de negocio en `SaleService`
+  - formularios y validaciones de alta/edición
+  - vistas CRUD con control de acceso por staff/permisos
+  - templates web para listado, detalle, formulario y baja lógica
+  - integración en admin y barra de navegación
+  - suite de tests de modelos, servicios, formularios y vistas
+
 ### Scaffold pendiente de implementación
 - `masters`
 - `purchases`
-- `sales`
 - `inventory`
 - `accounting`
 - `reports`
@@ -29,7 +37,7 @@ Estas apps están registradas en `INSTALLED_APPS`, pero hoy no contienen lógica
 
 ## 3) Patrón arquitectónico vigente
 
-El patrón real del proyecto se observa en `core`:
+El patrón real del proyecto se observa en `core` y se aplica en `sales`:
 
 - `models/base.py`: modelo base reutilizable con `created_at`, `updated_at` e `is_active`
 - `models/*.py`: entidades del dominio
@@ -107,6 +115,7 @@ Se agregó `.env.example` como referencia mínima de configuración.
 Estado actual:
 
 - `core` contiene la suite principal de pruebas funcionales y de seguridad
+- `sales` contiene suite de pruebas por componente (modelos, servicios, formularios, vistas)
 - el resto de las apps tienen estructura para tests, pero todavía no tienen casos implementados
 
 Comandos recomendados:
@@ -120,5 +129,6 @@ python manage.py test core
 ## 7) Riesgos conocidos
 
 - solo `core` representa funcionalidad de negocio real hoy
+- `sales` ya representa funcionalidad de negocio real junto con `core`
 - el resto de los módulos no deben considerarse terminados ni productivos
 - algunas deudas técnicas y hallazgos de revisión están documentados en `documentacion/REVISION_TECNICA_2026-04-11.md`

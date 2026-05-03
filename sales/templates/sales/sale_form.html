@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar Venta{% else %}Nueva Venta{% endif %} - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-file-invoice-dollar text-primary"></i>
+            {% if object %}Editar Venta{% else %}Nueva Venta{% endif %}
+        </h1>
+        <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-user text-secondary"></i> Datos del cliente</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for field in form %}
+                    <div class="col-md-6">
+                        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}<small class="text-muted d-block">{{ field.help_text }}</small>{% endif %}
+                        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fas fa-box text-secondary"></i> Productos</h5>
+        </div>
+        <div class="card-body">
+            {{ item_formset.management_form }}
+            <div id="sale-items-container" class="vstack gap-3">
+                {% for item_form in item_formset %}
+                    <div class="border rounded p-3 sale-item-row">
+                        {% if item_form.non_field_errors %}
+                            <div class="text-danger small mb-2">{{ item_form.non_field_errors }}</div>
+                        {% endif %}
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-5">
+                                <label class="form-label">{{ item_form.product.label }}</label>
+                                {{ item_form.product }}
+                                {% if item_form.product.errors %}<div class="text-danger small mt-1">{{ item_form.product.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">{{ item_form.quantity.label }}</label>
+                                {{ item_form.quantity }}
+                                {% if item_form.quantity.errors %}<div class="text-danger small mt-1">{{ item_form.quantity.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">{{ item_form.unit_price.label }}</label>
+                                {{ item_form.unit_price }}
+                                {% if item_form.unit_price.errors %}<div class="text-danger small mt-1">{{ item_form.unit_price.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quitar</label>
+                                {% if item_form.DELETE %}
+                                    <div class="form-check">{{ item_form.DELETE }} <span class="small">Eliminar</span></div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <template id="sale-empty-form-template">
+                <div class="border rounded p-3 sale-item-row mt-3">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label">{{ item_formset.empty_form.product.label }}</label>
+                            {{ item_formset.empty_form.product }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">{{ item_formset.empty_form.quantity.label }}</label>
+                            {{ item_formset.empty_form.quantity }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{{ item_formset.empty_form.unit_price.label }}</label>
+                            {{ item_formset.empty_form.unit_price }}
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Quitar</label>
+                            <div class="form-check">{{ item_formset.empty_form.DELETE }} <span class="small">Eliminar</span></div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <div class="mt-3">
+                <button type="button" id="add-sale-item" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-plus"></i> Agregar producto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mb-4">
+        <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Guardar
+        </button>
+    </div>
+</form>
+
+<script>
+    (function () {
+        const addBtn = document.getElementById('add-sale-item');
+        const container = document.getElementById('sale-items-container');
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const template = document.getElementById('sale-empty-form-template');
+
+        if (!addBtn || !container || !totalForms || !template) {
+            return;
+        }
+
+        addBtn.addEventListener('click', function () {
+            const index = parseInt(totalForms.value, 10);
+            const html = template.innerHTML.replaceAll('__prefix__', index);
+            container.insertAdjacentHTML('beforeend', html);
+            totalForms.value = index + 1;
+        });
+    })();
+</script>
+{% endblock %}

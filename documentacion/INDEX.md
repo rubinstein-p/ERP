@@ -39,7 +39,7 @@ Bienvenido a la documentación del **ERP Django Modular**. Este índice te guiar
 
 ## 🚀 Guías de Inicio Rápido
 
-### Quiero crear un nuevo módulo (ej: Sales)
+### Quiero crear un nuevo módulo (ej: Purchases)
 
 → **Leer:** [GUIA_DESARROLLO.md](GUIA_DESARROLLO.md)
 
@@ -171,10 +171,11 @@ Esta guía contiene:
 5. **Perfil del usuario**
 6. **Roles** (ABM completo)
 7. **Parámetros del sistema** (ABM completo)
-8. Códigos de estado HTTP
-9. Permisos por módulo
-10. Ejemplo de integración (cURL)
-11. Rate limiting
+8. **Ventas** (ABM completo)
+9. Códigos de estado HTTP
+10. Permisos por módulo
+11. Ejemplo de integración (cURL)
+12. Rate limiting
 
 ### [FAQ_TROUBLESHOOTING.md](FAQ_TROUBLESHOOTING.md)
 

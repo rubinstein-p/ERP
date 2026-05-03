@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalle de Venta - ERP Sistema{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <h1 class="h3 mb-0"><i class="fas fa-receipt text-primary"></i> {{ sale.sale_number }}</h1>
+        <div class="d-flex gap-2">
+            <a href="{% url 'sales:sale_update' sale.id %}" class="btn btn-outline-primary"><i class="fas fa-pen"></i> Editar</a>
+            <a href="{% url 'sales:sale_delete' sale.id %}" class="btn btn-outline-danger"><i class="fas fa-trash"></i> Eliminar</a>
+            <a href="{% url 'sales:sale_list' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Volver</a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h5 class="mb-0">Informacion del cliente</h5></div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Cliente:</strong> {{ sale.customer_name }}</p>
+                <p class="mb-2"><strong>Email:</strong> {{ sale.customer_email|default:'-' }}</p>
+                <p class="mb-2"><strong>Telefono:</strong> {{ sale.customer_phone|default:'-' }}</p>
+                <p class="mb-2"><strong>Vendedor:</strong> {{ sale.seller.get_full_name|default:sale.seller.username }}</p>
+                <p class="mb-0"><strong>Notas:</strong> {{ sale.notes|default:'-' }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white"><h5 class="mb-0">Resumen</h5></div>
+            <div class="card-body">
+                <p class="mb-2"><strong>Fecha:</strong> {{ sale.sale_date|date:'d/m/Y' }}</p>
+                <p class="mb-2"><strong>Entrega:</strong> {{ sale.delivery_date|date:'d/m/Y'|default:'-' }}</p>
+                <p class="mb-2"><strong>Estado:</strong> <span class="badge text-bg-primary">{{ sale.get_sale_status_display }}</span></p>
+                <p class="mb-2"><strong>Pago:</strong> <span class="badge text-bg-secondary">{{ sale.get_payment_status_display }}</span></p>
+                <hr>
+                <p class="mb-2"><strong>Subtotal:</strong> ${{ sale.subtotal|floatformat:2 }}</p>
+                <p class="mb-2"><strong>Impuestos:</strong> ${{ sale.tax|floatformat:2 }}</p>
+                <p class="mb-0 fs-5"><strong>Total:</strong> ${{ sale.total|floatformat:2 }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white"><h5 class="mb-0">Items</h5></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio unitario</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in sale.items.all %}
+                    <tr>
+                        <td>{{ item.product_name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>${{ item.unit_price|floatformat:2 }}</td>
+                        <td>${{ item.get_total|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="4" class="text-center text-muted py-3">Sin items registrados.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
